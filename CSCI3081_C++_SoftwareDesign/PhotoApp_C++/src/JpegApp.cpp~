@@ -1,0 +1,204 @@
+//JpegApp.cpp
+
+#include "JpegApp.h"
+#include "ColorData.h"
+#include "PixelBuffer.h"
+
+#include "jpeglib.h"
+#include "jerror.h"
+//#include "/home/hochr007/csci3081/repo-group-MidsummerNightsDream/iteration2/jpeg-9a/include/jpeglib.h"
+//#include "/home/hochr007/csci3081/repo-group-MidsummerNightsDream/iteration2/jpeg-9a/include/jerror.h"
+
+#include <stdio.h>
+#include <stdlib.h> 
+
+#include <iostream>
+#include <cstring>
+#include <string>
+
+using std::cout;
+using std::endl;
+
+JpegApp::JpegApp()
+{
+}
+
+JpegApp::~JpegApp()
+{
+}
+
+//Getter Methods
+
+
+int JpegApp::getImageWidth(){
+	return m_width;
+}
+int JpegApp::getImageHeight(){
+	return m_height;
+}
+//Image Loading 1
+
+ColorData* JpegApp::loadImage(char* file_name){
+	
+	unsigned char * rowptr;    // pointer to an array
+  	unsigned char * jdata;        // data for the image
+  	struct jpeg_decompress_struct info; //for our jpeg info
+  	struct jpeg_error_mgr err;          //the error handler
+	cout << "in jpeg file 1" << endl;
+	FILE* file = fopen((char*)file_name, "rb");  //open the file
+	//error handler if the jpeg file doesn't load
+  	if(!file) {
+     		fprintf(stderr, "Error reading JPEG file %s!", file_name);
+     		return 0;
+  	}
+	
+	cout << "in jpeg file 2" << endl;	
+  	info.err = jpeg_std_error(&err);     
+  	jpeg_create_decompress(&info);   //fills info structure
+	cout << "in jpeg file 3" << endl;
+	jpeg_stdio_src(&info, file);    
+  	jpeg_read_header(&info, TRUE);   // read jpeg file header
+	cout << "in jpeg file 4" << endl;
+  	jpeg_start_decompress(&info);    // decompress the file
+
+	//set width and height
+  	m_width = info.output_width;
+  	m_height = info.output_height;
+  	m_numChannels = info.num_components;
+
+	cout << m_width << endl;
+	cout << m_height << endl;
+	cout << m_numChannels << endl;
+
+  	//int type = GL_RGBA;
+  	unsigned long data_size = m_width * m_height * m_numChannels;
+	cout << "in jpeg file 5" << endl;
+	// read RGBA scanlines one at a time & put bytes in jdata[] array. 
+	jdata = (unsigned char *)malloc(data_size);
+	cout << "in jpeg file 6" << endl;
+  	while (info.output_scanline < m_height) {
+
+    		// Enable jpeg_read_scanlines() to fill our jdata array
+    		rowptr = jdata + m_numChannels * info.output_width * info.output_scanline; 	
+		jpeg_read_scanlines(&info, &rowptr, 1);
+  	}
+
+	jpeg_finish_decompress(&info);   //finish decompressing
+cout << "in jpeg file 9" << endl;
+	fclose(file);                    //close the file
+cout << "in jpeg file 10" << endl;	
+	//transform to a ColorData array
+	ColorData* CD_buf = new ColorData[m_width * m_height];
+cout << "in jpeg file 11" << endl;	
+	int j=0;	
+	for (int i=0;i<(m_width * m_height);i++){	
+
+		CD_buf[i].setRed(((float)jdata[j])/255.0);
+		CD_buf[i].setGreen(((float)jdata[j+1])/255.0);
+		CD_buf[i].setBlue(((float)jdata[j+2])/255.0);
+		if (m_numChannels==4)
+			CD_buf[i].setAlpha(((float)jdata[j+3])/255.0);
+		j=j+ m_numChannels;
+	}
+
+cout << "in jpeg file 12" << endl;	
+	free(jdata); 			//free the data array
+cout << "in jpeg file 13" << endl;
+
+	//return pointer to ColorData array
+	return CD_buf;
+}
+
+
+//Image Saving
+
+void JpegApp::saveImage(char* file_name, PixelBuffer* displayBuffer, int width, int height, int numChannels){
+
+	struct jpeg_compress_struct info; //for our jpeg info
+  	struct jpeg_error_mgr err;          //the error handler
+	unsigned char * image_buffer;		    // Points to large array of R,G,B-order data 
+	int row_stride;
+	JSAMPROW row_ptr[1];
+	
+	cout << "in jpeg file 1" << endl;
+	FILE* file = fopen((char*)file_name, "rb");  //open the file
+	//error handler if the jpeg file doesn't load
+  	if(!file) {
+     		fprintf(stderr, "Error reading JPEG file %s!", file_name);
+  	}
+
+	info.err = jpeg_std_error(&err);
+	jpeg_create_compress(&info);
+	jpeg_stdio_dest(&info,file);
+	cout << "in jpeg file 2" << endl;
+	//set width and height
+
+	info.image_width = width; 	/* image width and height, in pixels */
+  	info.image_height = height;
+  	info.input_components =numChannels;		/* # of color components per pixel */
+  	info.in_color_space = JCS_RGB; 	/* colorspace of input image */
+  
+  	jpeg_set_defaults(&info);
+	jpeg_set_quality(&info,50,TRUE);	
+		
+	//fill in image_buffer
+	image_buffer = (unsigned char *)malloc(width * height * numChannels);
+	
+cout << width * height * numChannels << endl;	
+	int j=0;	
+	//for (int i=0;i<(width * height);i++){	
+	for (int y=0;y<height;y++){
+		for(int x=0;x<width;x++){
+			
+			unsigned int pxIndex =((y*width)+x)*info.input_components;
+			
+			y=height-y-1;
+			image_buffer[pxIndex] = displayBuffer->getPixel(x,y).getRed()*255;
+			image_buffer[pxIndex+1] = displayBuffer->getPixel(x,y).getGreen()*255;
+			image_buffer[pxIndex+2] = displayBuffer->getPixel(x,y).getBlue()*255;
+		}
+	}	
+	/*
+		image_buffer[j] = (unsigned char) ((CD_buf[i].getRed())*255);
+		image_buffer[j+1] = (unsigned char) ((CD_buf[i].getGreen())*255);
+		image_buffer[j+2] = (unsigned char) ((CD_buf[i].getBlue())*255);
+		if (numChannels==4)
+			image_buffer[j+3] = (unsigned char) ((CD_buf[i].getAlpha())*255);
+		j=j+ numChannels;
+	}
+	*/
+cout << j << endl;
+cout << image_buffer[10] << endl;
+
+cout << width << endl;
+cout << height << endl;
+cout << numChannels << endl;
+cout << "in jpeg file 3" << endl;
+
+	jpeg_start_compress(&info, TRUE);
+cout << "in jpeg file 4" << endl;
+	row_stride = width * numChannels;	/* JSAMPLEs per row in image_buffer */
+cout << row_stride << endl;	
+	int i =0;
+	while (info.next_scanline < info.image_height) {
+   
+    		row_ptr[0] = &image_buffer[info.next_scanline * row_stride];
+//cout << "in jpeg file 4a" << endl;
+    		(void) jpeg_write_scanlines(&info, row_ptr, 1);
+//cout << "in jpeg file 4b" << endl;
+	i++;
+cout << i << endl;
+  	}
+
+cout << "in jpeg file 5" << endl;	
+	jpeg_finish_compress(&info);
+cout << "in jpeg file 6" << endl;	
+	/* After finish_compress, we can close the output file. */
+	
+cout << "in jpeg file 7" << endl;
+  	jpeg_destroy_compress(&info);
+	fclose(file);
+	free(image_buffer);
+cout << "in jpeg file 8" << endl;
+}
+

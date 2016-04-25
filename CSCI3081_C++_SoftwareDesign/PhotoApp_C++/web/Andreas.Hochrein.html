@@ -1,0 +1,79 @@
+Code example from FlashPhotoApp.cpp:
+
+--------------------------------------------------------------------------------------------------------------------
+
+void FlashPhotoApp::loadImageToCanvas()
+{
+	addUndo(); //Undo function for Canvas
+    
+	cout << "Load Canvas has been clicked for file " << m_fileName << endl;
+	
+	//[...some comments are omitted...]
+
+// JPEG
+
+	JpegApp* image;		//JPEG object
+
+	ColorData* CDptr;	//ColorData Pointer
+	
+	//transform filename from string to char*
+	char *fn = new char[m_fileName.length() + 1];
+	std::strcpy(fn,m_fileName.c_str());
+		
+	//load the selected Image 
+	image = new JpegApp();
+	CDptr = image->loadImage(fn);	
+
+	//Get height and width from JPEG object
+	int width = image->getImageWidth();
+	int height = image->getImageHeight();
+
+	//Create the PixelBuffer for the Image
+	PixelBuffer* newDisplayBuffer = new PixelBuffer(width,height, (*m_displayBuffer).getBackgroundColor());	
+	
+	//Fill buffer with input from image 
+	for(int y=0;y<height;y++){	
+		for(int x=0; x<width;x++)
+			newDisplayBuffer->setPixel(x,y,CDptr[x+(y*width)]);
+	}
+  
+	//Rotation (since the image was read in 180 degree rotated)
+	PixelBuffer* rotatedBuffer = new PixelBuffer(width,height, (*m_displayBuffer).getBackgroundColor());
+	int k=height-1;
+	for(int y=0;y<height;y++){	
+		for(int x=0; x<width;x++)
+			rotatedBuffer->setPixel(x,y,newDisplayBuffer->getPixel(x,k));
+		k--;
+	}
+
+	// Change curent display buffer to the new buffer
+	m_displayBuffer = rotatedBuffer;
+
+	//adjust the window dimensions to the image that was loaded into the canvas
+	setWindowDimensions(width, height);
+
+	//delete all pointers to objects
+	delete image;
+	delete CDptr;
+	delete fn;
+	delete newDisplayBuffer;
+-------------------------------------------------------------------------------------------------------------------
+
+PURPOSE
+The purpose of the loadImageToCanvas() routine is to load a image file into the a PixelBuffer and choose this PixelBuffer as the displayed Buffer when the user chooses to click the loadCanvas in the UI. Further, the window size of the canvas gets adjusted to the size of the image and is not anymore fixed 800x800 as in most other routines. Since this routine changes the displayed buffer, it can also be undone and redone.
+
+PROCESS
+The code accomplises its purpose by accessing the member variable that stores the currently chosen file name and inputing this file name into the loadImage routine in JpegApp. This routine returns a large array of ColorData containing the RGB values of the JPEG image at the given path (JPEG pictures usually don't have a alpha value for transparency, thus Alpha is set to 1 for all the ColorData elements). This ColorData array is a inbetween step to the desired PixelBuffer. A ColorData array (CDptr) and JpegApp object (image) needs to be initialized and allocated. 
+
+Next, the routine reads in the height and width of the given image through calls to the JPEG class. 
+This data together with the ColorData array is enough to create a PixelBuffer that fully contains the image.
+However, this image is rotated by 180 degrees, thus the routine has a simple rotation routine next.
+
+Lastly, it changes the displayedBuffer to the just created rotatedBuffer which contains the image in the right orientation. Now, it adjustes the window dimensions to the canvas and deletes all of the pointers that were allocated in the routine.
+
+STYLE
+To increase the readability of the code, we strive to include comments explaining the purpose of a function at least above every function. In technical pieces of code as above that connect the program to the more complex low-level code necessary for JPEG I/O, we try to comment above or next to every important sub functionality of the routine.
+
+We declare important objects and data structures at the beginning of a function, before they get allocated. We try to keep names for function and variables short, but straightforward. Instead of repeated calls to getter methods, we save values in local variables to make the code more efficient and easier to read.
+
+On the more global level, we try to split up the complexity of the code into several layers. When we read this routine, we do not have to deal with the library functions or structs from JPEG. These are all hidden behind loadImage(). We merely have to deal with PixelBuffers and ColorData as in most other routines in this program. This improves consistency and abstraction. 

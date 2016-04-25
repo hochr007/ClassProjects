@@ -1,0 +1,27 @@
+//ImageApp.h
+
+//Uses code from ImageHandler.h, Copyright (c) 2015 Sarit Ghildayal
+
+#ifndef IMAGEHANDLER_H
+#define IMAGEHANDLER_H
+
+#include <string>
+
+class PixelBuffer;
+
+class ImageHandler {
+public:
+  enum IMAGE_TYPE {
+        PNG_IMAGE,
+        JPG_IMAGE,
+        UNKNOWN_IMAGE
+    };
+	
+  static PixelBuffer* loadImage(const std::string &fileName);
+  static bool saveImage(const std::string &fileName, const PixelBuffer* bufferToSave);
+private:
+    //bool isValidImageFile(const std::string & fileName);
+    static IMAGE_TYPE getImageType(const std::string & fileName);
+};
+	
+#endif

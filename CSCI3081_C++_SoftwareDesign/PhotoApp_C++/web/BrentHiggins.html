@@ -1,0 +1,63 @@
+//applies the filter
+void Sharpen::apply(float amount,PixelBuffer* current)
+{
+	//dynamicly allocate the kernal based upon the 
+	kernal = new float[3*3];
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			if(i==1&&j==1)
+				kernal[i*3+j]=amount;
+			else
+				kernal[i*3+j]=-((amount-1.0)/8.0);
+			}
+	}
+				std::cout<<kernal[3]<<std::endl;
+	
+	PixelBuffer * copy = new PixelBuffer(current->getWidth(),current->getHeight(),current->getBackgroundColor());
+	copy->copyPixelBuffer(copy, current);
+	//apply the filter using the kernal
+	for(int i = 0; i<current->getHeight(); i++)
+	{
+		for(int j = 0; j < current->getWidth(); j++)
+		{
+			ColorData color(0,0,0);
+			for(int m =0; m<3 ;m++)
+			{
+				for(int n = 0; n<3; n++)
+				{
+					int height = i+m-(3/2);
+					int width = n+j-(3/2);
+
+					color= ((copy->getPixel(width,height))*kernal[m*3+n]) + color;
+						
+				}
+			}			
+			color = color.clampedColor();
+			current->setPixel(j,i,color);      
+		}
+	}
+	delete copy;
+	delete kernal;
+}
+
+This is a the apply function from the filter Sharpen which I created along with every other filter besides the blur filters
+and the Undo/Redo capibility. In addition I updated and integrated the Iteration 1 code into the FlashPhoto application. 
+This code shows how to implement a kernal based filter which is dependent on the paramter amount to create the proper kernal. 
+Unlike filters like Edge detect which require only a fixed kernal and the others which do not need a kernal this filter has a
+kernal which changes long with its paramters. Therefore the dynamic allocation is necessary and should imediatly be followed
+with code to fill the array with the proper information for the kernal. 
+The next important detail in this code is the creation
+of a copy PixelBuffer because otherwise the filter will be appling over itself as it passes through the image while this may
+not seem like a big deal it will drasticly change the resulting image expecialy in the far corner from where the filter begins
+to apply. This is very important because it allows for the most accurate filter aplication as possible which inturn provides 
+the best exoerience for the users. 
+Another imprtant thing to note is how the kernal is applied to each value in the current PixelBuffer. Four for loops are needed 
+first two to acess every pixel in the current PixelBuffer and the inner two loops are to use every value in the kernal. One thing 
+that we try to make use of in all code is the use of local variables to simplify function calls whenever possible such as the 
+height and width variables in the innermost for loop. Thias allows others to easly understand the code and allows for easy changes 
+if the desired values change durring development.
+The code above also serves as an example of the coding style which should be useed in this project. At the bgining of each funtion 
+a comment gives a shprt description of what the function does as part of the project. Inside the function comments are added to 
+add clarity as to the function of code expecialy control loops or other potentialy confusing code.

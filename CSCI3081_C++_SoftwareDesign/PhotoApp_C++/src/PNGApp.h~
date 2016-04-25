@@ -1,0 +1,20 @@
+//  PNGApp.h
+
+//Uses code from IPNGHandler.h, Copyright (c) 2015 Sarit Ghildayal
+
+#ifndef PNGAPP_H
+#define PNGAPP_H
+
+#include <string>
+
+#include "ImageHandler.h"
+
+class PixelBuffer;
+
+class PNGApp : public ImageHandler {
+public:
+    static PixelBuffer* loadImage(const std::string fileName);
+    static bool saveImage(const std::string fileName, const PixelBuffer* bufferToSave);
+};
+
+#endif

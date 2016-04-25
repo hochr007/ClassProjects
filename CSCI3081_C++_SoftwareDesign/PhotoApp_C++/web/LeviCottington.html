@@ -1,0 +1,55 @@
+PixelBuffer * copy = new PixelBuffer(current->getWidth(),current->getHeight(),current->getBackgroundColor());
+	copy->copyPixelBuffer(copy, current);
+	for(int i=0; i<current->getHeight(); i++){
+		for(int j= 0; j<current->getWidth(); j++){
+			ColorData total(0,0,0);
+			float counter=0;
+			
+			for(int p=0; p<41; p++){
+				for(int w=0; w<41; w++){
+					float dist;
+					
+					dist = kernal[p][w];
+					//if valid pixel add to total and increment count
+					if((j-20)+w >=0 && (j-20)+w < current->getWidth() && (i-20)+p >=0 && (i-20)+p < current->getHeight()){
+						
+						if(dist <= amount){ 
+							total = total + copy->getPixel((j-20)+w,(i-20)+p);
+							counter++;
+						}
+						
+					}
+					
+				
+				}
+			}
+			//averages total and clamps to make sure in range
+			total = total* (1./counter);
+			total.clampedColor();
+			current->setPixel(j,i,total);
+		}
+		
+		
+		
+this code is used for the blurFilter class and it's purpose is to calculate and set the pixels for each pixel in an image.
+the way it works is by using a copy of the current pixelBuffer that is originally passed in (see BlurFilter.cpp). this copy is
+then used as a buffer for taking the pixel data. the reason we do this is because the actual current pixelBuffer is constantly
+being updated with new "blurred" pixels, so we need a copy of the original so we don't have to worry about using skewed data. 
+we then start out with a double nested for loop, as you can see it iterates through the height and width of the pixelBuffer,
+basically the entire image. this is done because it is required to apply this blur Filter to every pixel in the image. I then
+declare a colorData variable that will later be used to calculate the final Color that will be put into the current pixel being
+iterated on. a counter is also created to know how many times a colorData was added to total. the next set of double nested 
+for loops is used to iterate through the kernal that is being used. this kernal is populated using the constructor from 
+BlurFilter.cpp. basically its a set of distances that each member in the kernal is away from the center. that is why we set the
+current distance to whatever piece of the kernal the for loops are on. the first if statement you see is used for edge detection.
+when a pixel gets close to the edge, the mask that surrounds it may go off the image slightly. what that if statement does is make 
+sure that those specific parts of the mask(kernal) are not used in the averaging of Colors around the pixel we are trying to 
+populate. the nested if statement is pretty self explanetory. the "amount" that we get is used as a marker for how many pixels
+around the center we need to take in, using the distance variable, it can easily be checked if a part of a kernal is within range
+of the center pixel in order to be used.
+so if a usable pixel is indeed found, it simply is added to the total and the counter is increased. once we reach the outside of 
+the inner nested for loops. the pixel that was calculated needs to actually be applied to the image. to do this, the total is then 
+divided by how many pixels were added to it in order to get the average. the "clamped color" function is used to make sure that 
+the numbers are proportionally decreased so that they are between 0 and 1. then set pixel actually applies it to the current image.
+
+this method was a major building block for many of the functions including MotionBlur and the blur tool.

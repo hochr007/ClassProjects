@@ -1,0 +1,54 @@
+//  ImageHandler.cpp
+
+//Uses code from ImageHandler.cpp, Copyright (c) 2015 Sarit Ghildayal
+
+#include "ImageHandler.h"
+
+#include "PixelBuffer.h"
+#include "ColorData.h"
+
+#include "PNGApp.h"
+#include "JPEGApp.h"
+
+
+PixelBuffer* ImageHandler::loadImage(const std::string & fileName) {
+    
+    IMAGE_TYPE imageType = getImageType(fileName);
+    PixelBuffer* loadedImage = NULL;
+    if (imageType == PNG_IMAGE) {
+        loadedImage = PNGApp::loadImage(fileName);
+    } 
+    else if (imageType == JPG_IMAGE) {
+        loadedImage = JPEGApp::loadImage(fileName);
+    }  
+    else {
+        // TODO how to error out?
+    }
+
+    return loadedImage;
+}
+
+bool ImageHandler::saveImage(const std::string & fileName, const PixelBuffer* bufferToSave) {
+    IMAGE_TYPE imageType = getImageType(fileName);
+    bool success = false;
+    if (imageType == PNG_IMAGE) {
+        success = PNGApp::saveImage(fileName, bufferToSave);
+    } 
+    else if (imageType == JPG_IMAGE) {
+        success = JPEGApp::saveImage(fileName, bufferToSave);
+    }  
+
+    return success;
+}
+
+ImageHandler::IMAGE_TYPE ImageHandler::getImageType(const std::string & fileName) {
+    if (fileName.find(".png",fileName.size()-5) != std::string::npos) {
+        return PNG_IMAGE;
+    } 
+    else if (fileName.find(".jpg",fileName.size()-5) != std::string::npos || fileName.find(".jpeg",fileName.size()-6) != std::string::npos) {
+        return JPG_IMAGE;
+    } 
+    else {
+        return UNKNOWN_IMAGE;
+    }
+}
